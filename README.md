@@ -48,6 +48,7 @@ pip install -r requirements.txt
 python preview.py        # imprime todos los mensajes con datos inventados (no envía nada)
 python simulate.py       # simula alertas y resúmenes con un reloj virtual (no envía nada)
 python probar_discord.py # envía un mensaje de prueba al canal del .env
+python ensayo.py         # envía al canal del .env las dos alertas de una tormenta inventada, marcadas como PRUEBA
 ```
 
 Para `probar_discord.py` hace falta copiar `.env.example` a `.env` y rellenar la URL del webhook.
@@ -65,5 +66,5 @@ Para `probar_discord.py` hace falta copiar `.env.example` a `.env` y rellenar la
 | `fetch.py` | Descarga del calendario |
 | `storage.py`, `envio.py` | Registro de avisos enviados y envío de una sola vez |
 | `discord_notifier.py` | Envío a Discord |
-| `preview.py`, `simulate.py`, `probar_discord.py` | Herramientas de prueba |
+| `preview.py`, `simulate.py`, `probar_discord.py`, `ensayo.py` | Herramientas de prueba |
 | `.github/workflows/avisos.yml` | Ejecución en GitHub Actions |
