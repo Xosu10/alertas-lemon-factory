@@ -42,7 +42,7 @@ def _item(tormenta, con_fecha):
 
 def primera_alerta(minutos, tormenta):
     return (
-        "⛈️ ¡Atención, zagales! Se viene una buena tormenta\n\n"
+        "@everyone ⛈️ ¡Atención, zagales! Se viene una buena tormenta\n\n"
         f"🕒 {fecha_larga(tormenta.cuando)} {hora(tormenta.cuando)} (hora España)\n\n"
         f"En {_minutos(minutos)} se puede liar parda por la huerta. "
         "¡Recoge los limones, guarda las herramientas y ponte a cubierto, que vienen curvas!"
@@ -52,7 +52,7 @@ def primera_alerta(minutos, tormenta):
 
 def segunda_alerta(minutos, cantidad=1):
     return (
-        "🚨 ¡Alerta roja en el bancal!\n\n"
+        "@everyone 🚨 ¡Alerta roja en el bancal!\n\n"
         "El cielo se está poniendo más negro que un capazo de tierra mojada. "
         f"En {_minutos(minutos)} llega una tormenta bien gorda. "
         "¡Que no te pille con el tractor arrancado y los limones sin recoger!"

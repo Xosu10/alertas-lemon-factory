@@ -33,8 +33,8 @@ def evento(cuando, impacto="High", pais="USD"):
 
 
 def describir(texto):
-    if texto.startswith(("⛈️", "🚨")):
-        tipo = "primera" if texto.startswith("⛈️") else "segunda"
+    if texto.startswith("@everyone"):
+        tipo = "primera" if "⛈️" in texto.split("\n")[0] else "segunda"
         minutos = re.search(r"En (\d+) minuto", texto).group(1)
         juntas = re.search(r"vienen (\d+) tormentas juntas", texto)
         extra = f", {juntas.group(1)} tormentas juntas" if juntas else ""

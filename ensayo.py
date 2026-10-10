@@ -1,5 +1,8 @@
-"""Ensayo real: pasa tormentas inventadas por el mismo código que usa el bot y envía las alertas al canal del .env.
-Cada mensaje lleva delante una línea de PRUEBA. Usa un registro temporal, nunca el real."""
+"""Ensayo real: pasa una tormenta inventada por el mismo código que usa el bot y envía la alerta al canal del .env,
+marcada como PRUEBA. Las alertas llevan @everyone, así que cada mensaje avisa a todo el canal.
+Por defecto envía solo la primera alerta; con `python ensayo.py completo` envía también la segunda.
+Usa un registro temporal, nunca el real."""
+import sys
 import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -33,21 +36,25 @@ def tormenta_en(ahora, minutos):
 
 
 def main():
+    completo = "completo" in sys.argv[1:]
+
     with tempfile.TemporaryDirectory() as carpeta:
         storage.DB_PATH = str(Path(carpeta) / "ensayo.db")
         storage.init_db()
         ahora = datetime.now(timezone.utc)
 
-        primera = [tormenta_en(ahora, 58)]
-        segunda = [tormenta_en(ahora, 28)]
+        tormentas = [[tormenta_en(ahora, 58)]]
+        if completo:
+            tormentas.append([tormenta_en(ahora, 28)])
 
-        enviar_alertas(primera, ahora, enviar_marcado)
-        enviar_alertas(segunda, ahora, enviar_marcado)
-        print(f"Primera pasada: {enviados} mensajes enviados (se esperan 2: primera y segunda alerta)")
+        for eventos in tormentas:
+            enviar_alertas(eventos, ahora, enviar_marcado)
+        esperados = len(tormentas)
+        print(f"Primera pasada: {enviados} mensajes enviados (se esperan {esperados})")
 
         antes = enviados
-        enviar_alertas(primera, ahora, enviar_marcado)
-        enviar_alertas(segunda, ahora, enviar_marcado)
+        for eventos in tormentas:
+            enviar_alertas(eventos, ahora, enviar_marcado)
         print(f"Segunda pasada inmediata: {enviados - antes} mensajes nuevos (se espera 0: nada se repite)")
 
 
