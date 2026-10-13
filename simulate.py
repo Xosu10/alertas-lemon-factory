@@ -32,17 +32,25 @@ def evento(cuando, impacto="High", pais="USD"):
     }
 
 
-def describir(texto):
-    if texto.startswith("@everyone"):
-        tipo = "primera" if "⛈️" in texto.split("\n")[0] else "segunda"
-        minutos = re.search(r"En (\d+) minuto", texto).group(1)
-        juntas = re.search(r"vienen (\d+) tormentas juntas", texto)
-        extra = f", {juntas.group(1)} tormentas juntas" if juntas else ""
-        return tipo, f"{tipo.upper()} alerta (dice «en {minutos} min»{extra})"
+MENCION = "@everyone "
 
-    tipo = "diario" if texto.startswith(("🌥️", "🌤️")) else "semanal"
-    con_tormentas = texto.startswith(("🌥️", "🌪️"))
-    return tipo, f"RESUMEN {tipo.upper()} ({'con' if con_tormentas else 'sin'} tormentas)"
+
+def describir(texto):
+    """Devuelve (tipo, descripción, ¿lleva @everyone?, ¿debería llevarlo?). Lo llevan las dos alertas y el diario con tormentas."""
+    lleva = texto.startswith(MENCION)
+    cuerpo = texto.removeprefix(MENCION)
+
+    if cuerpo.startswith(("⛈️", "🚨")):
+        tipo = "primera" if cuerpo.startswith("⛈️") else "segunda"
+        minutos = re.search(r"En (\d+) minuto", cuerpo).group(1)
+        juntas = re.search(r"vienen (\d+) tormentas juntas", cuerpo)
+        extra = f", {juntas.group(1)} tormentas juntas" if juntas else ""
+        return tipo, f"{tipo.upper()} alerta (dice «en {minutos} min»{extra})", lleva, True
+
+    tipo = "diario" if cuerpo.startswith(("🌥️", "🌤️")) else "semanal"
+    con_tormentas = cuerpo.startswith(("🌥️", "🌪️"))
+    debe = tipo == "diario" and con_tormentas
+    return tipo, f"RESUMEN {tipo.upper()} ({'con' if con_tormentas else 'sin'} tormentas)", lleva, debe
 
 
 def simular(nombre, feed, inicio, fin, esperado, mostrar_textos=False, comprobar_extra=None, resumenes=False, con_dia=False):
@@ -70,10 +78,14 @@ def simular(nombre, feed, inicio, fin, esperado, mostrar_textos=False, comprobar
     formato = "%d/%m %H:%M" if con_dia else "%H:%M"
     obtenido = []
     vistos = set()
+    menciones_bien = True
     for momento, texto in enviados:
-        tipo, descripcion = describir(texto)
+        tipo, descripcion, lleva, debe = describir(texto)
+        menciones_bien = menciones_bien and lleva == debe
         obtenido.append((momento.strftime(formato), tipo))
-        print(f"  {momento.strftime('%d/%m %H:%M:%S' if con_dia else '%H:%M:%S')}  ->  {descripcion}")
+        marca = "  [con @everyone]" if lleva else ""
+        aviso = "" if lleva == debe else "   <-- MENCIÓN INCORRECTA"
+        print(f"  {momento.strftime('%d/%m %H:%M:%S' if con_dia else '%H:%M:%S')}  ->  {descripcion}{marca}{aviso}")
         if mostrar_textos and tipo not in vistos:
             vistos.add(tipo)
             print()
@@ -82,7 +94,7 @@ def simular(nombre, feed, inicio, fin, esperado, mostrar_textos=False, comprobar
     if not enviados:
         print("  (no se envía nada)")
 
-    correcto = obtenido == esperado and (comprobar_extra is None or comprobar_extra(enviados))
+    correcto = obtenido == esperado and menciones_bien and (comprobar_extra is None or comprobar_extra(enviados))
     print(f"\n  Esperado: {esperado if esperado else 'nada'}")
     print("  OK, CORRECTO" if correcto else "  FALLO, NO COINCIDE")
     print()

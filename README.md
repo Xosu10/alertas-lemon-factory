@@ -8,7 +8,7 @@ Avisos por Discord de las tormentas de la huerta: cuándo se acercan, cuántas h
 |---|---|
 | Primera alerta | Cuando falta 1 hora o menos para una tormenta (sale entre 55 y 60 min antes). Lleva `@everyone` |
 | Segunda alerta | Cuando faltan 30 minutos o menos (sale entre 25 y 30 min antes). Lleva `@everyone` |
-| Resumen diario | De lunes a viernes, a la 01:00 (hora de España). Dice cuántas tormentas hay ese día y a qué hora |
+| Resumen diario | De lunes a viernes, a la 01:00 (hora de España). Dice cuántas tormentas hay ese día y a qué hora. Lleva `@everyone` los días con tormenta |
 | Resumen semanal | Los lunes, a la 01:00. Lista las tormentas de la semana (lunes a domingo) |
 
 Reglas:

@@ -77,7 +77,7 @@ def resumen_diario(dia, tormentas):
     cuantas = "se espera 1 tormenta de las gordas" if n == 1 else f"se esperan {n} tormentas de las gordas"
     lista = "\n".join(_item(t, con_fecha=False) for t in tormentas)
     return (
-        "🌥️ Parte meteorológico de la huerta\n\n"
+        "@everyone 🌥️ Parte meteorológico de la huerta\n\n"
         f"📅 Resumen del día ({fecha}): hoy el cielo viene cargado, {cuantas}:\n\n"
         f"{lista}\n\n"
         "No te confíes: ten los limones recogidos y las herramientas a mano. "
