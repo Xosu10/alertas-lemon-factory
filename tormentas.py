@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo
 
 from config import FIRST_ALERT_MINUTES, SECOND_ALERT_MINUTES
 from envio import enviar_una_vez
-from messages import Tormenta, primera_alerta, segunda_alerta
+from messages import Tormenta, es_de_madrugada, primera_alerta, segunda_alerta
 
 MADRID = ZoneInfo("Europe/Madrid")
 
@@ -40,5 +40,5 @@ def enviar_alertas(eventos, ahora, enviar):
             continue
 
         n = max(1, round(minutos))
-        texto = primera_alerta(n, tormenta) if tipo == "primera" else segunda_alerta(n, tormenta.cantidad)
+        texto = primera_alerta(n, tormenta) if tipo == "primera" else segunda_alerta(n, tormenta.cantidad, es_de_madrugada(tormenta))
         enviar_una_vez(clave(tormenta), f"alerta_{tipo}", texto, enviar)

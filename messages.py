@@ -7,6 +7,13 @@ MESES = [
     "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
 ]
 
+AVISO_NOCTURNO_RESUMEN = (
+    "🌙 Ojo, que de madrugada el tiempo anda revuelto: no te vayas al huerto de noche, "
+    "que con la tormenta y a oscuras no se ve ni el capazo. "
+    "¡Mejor esperar a que aclare o estate bien atento!"
+)
+AVISO_NOCTURNO_ALERTA = "🌙 Y es de madrugada: nada de ir al huerto a oscuras, que el tiempo anda revuelto."
+
 
 @dataclass
 class Tormenta:
@@ -22,6 +29,12 @@ def hora(dt):
     return dt.strftime("%H:%M")
 
 
+def es_de_madrugada(tormenta):
+    """De 00:00 a 06:00, ambas incluidas (hora de España)."""
+    t = tormenta.cuando
+    return t.hour < 6 or (t.hour == 6 and t.minute == 0)
+
+
 def _minutos(n):
     return f"{n} minuto" if n == 1 else f"{n} minutos"
 
@@ -32,12 +45,17 @@ def _aviso_juntas(cantidad):
     return f"\n\n⚠️ Ojo: no viene una sola, vienen {cantidad} tormentas juntas a la misma hora."
 
 
+def _aviso_nocturno(de_madrugada):
+    return f"\n\n{AVISO_NOCTURNO_ALERTA}" if de_madrugada else ""
+
+
 def _item(tormenta, con_fecha):
     juntas = f" (vienen {tormenta.cantidad} juntas)" if tormenta.cantidad > 1 else ""
     if con_fecha:
         fecha = fecha_larga(tormenta.cuando)
         return f"• {fecha[0].upper() + fecha[1:]} — {hora(tormenta.cuando)} ⛈️{juntas}"
-    return f"• {hora(tormenta.cuando)} ⛈️{juntas}"
+    madrugada = " 🌙 de madrugada" if es_de_madrugada(tormenta) else ""
+    return f"• {hora(tormenta.cuando)} ⛈️{madrugada}{juntas}"
 
 
 def primera_alerta(minutos, tormenta):
@@ -47,16 +65,18 @@ def primera_alerta(minutos, tormenta):
         f"En {_minutos(minutos)} se puede liar parda por la huerta. "
         "¡Recoge los limones, guarda las herramientas y ponte a cubierto, que vienen curvas!"
         + _aviso_juntas(tormenta.cantidad)
+        + _aviso_nocturno(es_de_madrugada(tormenta))
     )
 
 
-def segunda_alerta(minutos, cantidad=1):
+def segunda_alerta(minutos, cantidad=1, de_madrugada=False):
     return (
         "@everyone 🚨 ¡Alerta roja en el bancal!\n\n"
         "El cielo se está poniendo más negro que un capazo de tierra mojada. "
         f"En {_minutos(minutos)} llega una tormenta bien gorda. "
         "¡Que no te pille con el tractor arrancado y los limones sin recoger!"
         + _aviso_juntas(cantidad)
+        + _aviso_nocturno(de_madrugada)
     )
 
 
@@ -76,10 +96,12 @@ def resumen_diario(dia, tormentas):
     n = len(tormentas)
     cuantas = "se espera 1 tormenta de las gordas" if n == 1 else f"se esperan {n} tormentas de las gordas"
     lista = "\n".join(_item(t, con_fecha=False) for t in tormentas)
+    nocturno = f"{AVISO_NOCTURNO_RESUMEN}\n\n" if any(es_de_madrugada(t) for t in tormentas) else ""
     return (
         "@everyone 🌥️ Parte meteorológico de la huerta\n\n"
         f"📅 Resumen del día ({fecha}): hoy el cielo viene cargado, {cuantas}:\n\n"
         f"{lista}\n\n"
+        f"{nocturno}"
         "No te confíes: ten los limones recogidos y las herramientas a mano. "
         "¡Te iremos avisando antes de cada una!"
     )

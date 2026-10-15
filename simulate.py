@@ -10,6 +10,7 @@ from zoneinfo import ZoneInfo
 import storage
 from ciclo import comprobar
 from filter import filtrar_tormentas
+from messages import Tormenta, es_de_madrugada
 from tormentas import enviar_alertas
 
 MADRID = ZoneInfo("Europe/Madrid")
@@ -53,7 +54,7 @@ def describir(texto):
     return tipo, f"RESUMEN {tipo.upper()} ({'con' if con_tormentas else 'sin'} tormentas)", lleva, debe
 
 
-def simular(nombre, feed, inicio, fin, esperado, mostrar_textos=False, comprobar_extra=None, resumenes=False, con_dia=False):
+def simular(nombre, feed, inicio, fin, esperado, mostrar_textos=False, comprobar_extra=None, resumenes=False, con_dia=False, previos=()):
     """`feed(ahora)` devuelve los eventos que publica el calendario en ese momento."""
     print("=" * 72)
     print(nombre)
@@ -63,6 +64,8 @@ def simular(nombre, feed, inicio, fin, esperado, mostrar_textos=False, comprobar
     with tempfile.TemporaryDirectory() as carpeta:
         storage.DB_PATH = str(Path(carpeta) / "simulacion.db")
         storage.init_db()
+        for clave, tipo in previos:  # avisos que ya habían salido antes de empezar la simulación
+            storage.mark_notified(clave, tipo)
 
         ahora = inicio
         while ahora <= fin:
@@ -105,6 +108,10 @@ def main():
     sys.stdout.reconfigure(encoding="utf-8")
     print("El reloj virtual avanza de 5 en 5 minutos, como el disparador real.")
     print("Cada comprobación se ejecuta dos veces seguidas para verificar que nada se duplica.\n")
+
+    limites = [((0, 0), True), ((5, 59), True), ((6, 0), True), ((6, 1), False), ((14, 30), False), ((23, 59), False)]
+    ok_limites = all(es_de_madrugada(Tormenta(madrid(10, 14, h, m))) == esperado for (h, m), esperado in limites)
+    print("Límites de la madrugada (de 00:00 a 06:00, ambas incluidas): " + ("OK" if ok_limites else "FALLO") + "\n")
 
     una = [evento(madrid(10, 14, 20, 30))]
 
@@ -221,77 +228,102 @@ def main():
             comprobar_extra=lambda enviados: "miércoles 28 de octubre 19:30 (hora España)" in enviados[0][1],
         ),
         simular(
-            "G1) Resumen diario con tormentas: miércoles 14 de octubre, a la 01:00",
+            "G1) Resumen diario con tormentas (ninguna de madrugada): miércoles 14 de octubre, a las 00:00",
             lambda ahora: semana,
-            madrid(10, 14, 0, 32, 40),
-            madrid(10, 14, 1, 30, 40),
-            [("01:02", "diario")],
+            madrid(10, 13, 23, 32, 40),
+            madrid(10, 14, 0, 30, 40),
+            [("14/10 00:02", "diario")],
             mostrar_textos=True,
+            comprobar_extra=lambda enviados: all("madrugada" not in texto for _, texto in enviados),
             resumenes=True,
+            con_dia=True,
+            previos=[("dia|2026-10-13", "resumen_diario")],
         ),
         simular(
             "G2) Resumen diario sin tormentas: martes 13 de octubre",
             lambda ahora: semana,
-            madrid(10, 13, 0, 32, 40),
-            madrid(10, 13, 1, 30, 40),
-            [("01:02", "diario")],
+            madrid(10, 12, 23, 32, 40),
+            madrid(10, 13, 0, 30, 40),
+            [("13/10 00:02", "diario")],
             mostrar_textos=True,
             resumenes=True,
+            con_dia=True,
+            previos=[("dia|2026-10-12", "resumen_diario"), ("semana|2026-W42", "resumen_semanal")],
         ),
         simular(
             "G3) El resumen diario sale una vez al día, dos días seguidos",
             lambda ahora: tranquila,
-            madrid(10, 14, 0, 32, 40),
-            madrid(10, 15, 1, 30, 40),
-            [("14/10 01:02", "diario"), ("15/10 01:02", "diario")],
+            madrid(10, 13, 23, 32, 40),
+            madrid(10, 15, 0, 30, 40),
+            [("14/10 00:02", "diario"), ("15/10 00:02", "diario")],
+            resumenes=True,
+            con_dia=True,
+            previos=[("dia|2026-10-13", "resumen_diario")],
+        ),
+        simular(
+            "G4) Lunes 12 de octubre completo: a las 00:00 resumen semanal y diario, y luego las dos alertas de las 14:30",
+            lambda ahora: semana,
+            madrid(10, 11, 23, 32, 40),
+            madrid(10, 12, 23, 55, 40),
+            [("12/10 00:02", "semanal"), ("12/10 00:02", "diario"), ("12/10 13:32", "primera"), ("12/10 14:02", "segunda")],
+            mostrar_textos=True,
             resumenes=True,
             con_dia=True,
         ),
         simular(
-            "G4) Lunes 12 de octubre completo: resumen semanal, resumen diario y las dos alertas de las 14:30",
-            lambda ahora: semana,
-            madrid(10, 12, 0, 32, 40),
-            madrid(10, 12, 23, 55, 40),
-            [("01:02", "semanal"), ("01:02", "diario"), ("13:32", "primera"), ("14:02", "segunda")],
-            mostrar_textos=True,
-            resumenes=True,
-        ),
-        simular(
             "G5) El calendario sigue con la semana vieja hasta las 09:00: los resúmenes del lunes esperan",
             lambda ahora: semana_vieja if ahora < madrid(10, 12, 9, 0) else semana,
-            madrid(10, 12, 0, 32, 40),
+            madrid(10, 11, 23, 32, 40),
             madrid(10, 12, 10, 0, 40),
-            [("09:02", "semanal"), ("09:02", "diario")],
+            [("12/10 09:02", "semanal"), ("12/10 09:02", "diario")],
             resumenes=True,
+            con_dia=True,
         ),
         simular(
             "G6) Semana sin tormentas: lunes 19 de octubre",
             lambda ahora: tranquila_19,
-            madrid(10, 19, 0, 32, 40),
-            madrid(10, 19, 1, 30, 40),
-            [("01:02", "semanal"), ("01:02", "diario")],
+            madrid(10, 18, 23, 32, 40),
+            madrid(10, 19, 0, 30, 40),
+            [("19/10 00:02", "semanal"), ("19/10 00:02", "diario")],
             mostrar_textos=True,
             resumenes=True,
+            con_dia=True,
         ),
         simular(
             "H) Una tormenta que en Nueva York es domingo por la tarde, pero en España ya es lunes (01:30)",
             lambda ahora: semana + [evento(madrid(10, 12, 1, 30))],
             madrid(10, 12, 0, 2, 40),
             madrid(10, 12, 1, 40, 40),
-            [("00:32", "primera"), ("01:02", "semanal"), ("01:02", "diario"), ("01:02", "segunda")],
+            [("00:02", "semanal"), ("00:02", "diario"), ("00:32", "primera"), ("01:02", "segunda")],
             mostrar_textos=True,
             resumenes=True,
         ),
         simular(
             "I) Fin de semana: el diario sale el viernes, ni sábado ni domingo, y el lunes salen semanal y diario",
             lambda ahora: tranquila + tranquila_19,
-            madrid(10, 16, 0, 32, 40),
-            madrid(10, 19, 1, 30, 40),
-            [("16/10 01:02", "diario"), ("19/10 01:02", "semanal"), ("19/10 01:02", "diario")],
+            madrid(10, 15, 23, 32, 40),
+            madrid(10, 19, 0, 30, 40),
+            [("16/10 00:02", "diario"), ("19/10 00:02", "semanal"), ("19/10 00:02", "diario")],
             resumenes=True,
             con_dia=True,
+            previos=[("dia|2026-10-15", "resumen_diario")],
+        ),
+        simular(
+            "J) Tormenta de madrugada (viernes 16 a las 05:30): aviso de no ir al huerto de noche",
+            lambda ahora: tranquila + [evento(madrid(10, 16, 5, 30))],
+            madrid(10, 16, 0, 2, 40),
+            madrid(10, 16, 5, 40, 40),
+            [("00:02", "diario"), ("04:32", "primera"), ("05:02", "segunda")],
+            mostrar_textos=True,
+            comprobar_extra=lambda enviados: (
+                "🌙 de madrugada" in enviados[0][1]
+                and "no te vayas al huerto de noche" in enviados[0][1]
+                and all("🌙 Y es de madrugada" in texto for _, texto in enviados[1:])
+            ),
+            resumenes=True,
         ),
     ]
+    resultados.append(ok_limites)
 
     correctos = sum(resultados)
     print(f"RESULTADO: {correctos} de {len(resultados)} escenarios correctos")

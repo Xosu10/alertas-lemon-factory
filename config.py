@@ -16,5 +16,5 @@ DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL", "")
 FIRST_ALERT_MINUTES = _int_env("FIRST_ALERT_MINUTES", 60)
 SECOND_ALERT_MINUTES = _int_env("SECOND_ALERT_MINUTES", 30)
 
-# Hora (España) del resumen diario y, los lunes, del semanal
-SUMMARY_HOUR = _int_env("SUMMARY_HOUR", 1)
+# Hora (España) del resumen diario y, los lunes, del semanal (0 = medianoche)
+SUMMARY_HOUR = _int_env("SUMMARY_HOUR", 0)

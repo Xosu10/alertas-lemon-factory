@@ -8,8 +8,8 @@ Avisos por Discord de las tormentas de la huerta: cuándo se acercan, cuántas h
 |---|---|
 | Primera alerta | Cuando falta 1 hora o menos para una tormenta (sale entre 55 y 60 min antes). Lleva `@everyone` |
 | Segunda alerta | Cuando faltan 30 minutos o menos (sale entre 25 y 30 min antes). Lleva `@everyone` |
-| Resumen diario | De lunes a viernes, a la 01:00 (hora de España). Dice cuántas tormentas hay ese día y a qué hora. Lleva `@everyone` los días con tormenta |
-| Resumen semanal | Los lunes, a la 01:00. Lista las tormentas de la semana (lunes a domingo) |
+| Resumen diario | De lunes a viernes, a las 00:00 (hora de España). Dice cuántas tormentas hay ese día y a qué hora. Lleva `@everyone` los días con tormenta, y un aviso extra si alguna es de madrugada (00:00 a 06:00) |
+| Resumen semanal | Los lunes, a las 00:00. Lista las tormentas de la semana (lunes a domingo) |
 
 Reglas:
 
@@ -17,6 +17,7 @@ Reglas:
 - Las tormentas que salen a la misma hora y minuto se agrupan en un único aviso.
 - No se mandan avisos caducados: si la primera alerta ya no llega a tiempo, solo sale la segunda; si la tormenta ya pasó, no se avisa.
 - Si cambia la hora de una tormenta, se recalcula y no se avisa a la hora antigua.
+- Las tormentas de madrugada (de 00:00 a 06:00) añaden un aviso de no ir al huerto de noche, en el resumen diario y en sus dos alertas.
 - Los eventos sin hora concreta (de todo el día) se ignoran.
 - Las horas son de España peninsular (con cambio de hora de verano e invierno) y las fechas salen en español.
 - Los lunes, si el calendario aún no trae la semana nueva, los dos resúmenes esperan a que la traiga.
@@ -36,7 +37,7 @@ Todo es gratis: el repositorio es público (minutos de Actions ilimitados) y no 
 | `DISCORD_WEBHOOK_URL` | Secreto de GitHub (en local, `.env`) | — | Canal de Discord al que se envía |
 | `FIRST_ALERT_MINUTES` | Variable de GitHub (opcional) | 60 | Minutos para la primera alerta |
 | `SECOND_ALERT_MINUTES` | Variable de GitHub (opcional) | 30 | Minutos para la segunda alerta |
-| `SUMMARY_HOUR` | Variable de GitHub (opcional) | 1 | Hora (España) de los resúmenes |
+| `SUMMARY_HOUR` | Variable de GitHub (opcional) | 0 | Hora (España) de los resúmenes (0 = medianoche) |
 
 La URL del webhook nunca se escribe en el código ni se sube al repositorio. Se pega desde el portapapeles en
 Settings → Secrets and variables → Actions → New repository secret, con el nombre `DISCORD_WEBHOOK_URL`.
