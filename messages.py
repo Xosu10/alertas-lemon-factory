@@ -13,12 +13,17 @@ AVISO_NOCTURNO_RESUMEN = (
     "¡Mejor esperar a que aclare o estate bien atento!"
 )
 AVISO_NOCTURNO_ALERTA = "🌙 Y es de madrugada: nada de ir al huerto a oscuras, que el tiempo anda revuelto."
+AVISO_SIN_HORA = (
+    "⏳ Ojo: no hay hora exacta de la tormenta. Revisa <https://www.forexfactory.com/calendar> para más info. "
+    "Estate atento, que en cualquier momento empieza a caer agua y nos pilla con el tractor labrando."
+)
 
 
 @dataclass
 class Tormenta:
     cuando: datetime  # siempre en hora de España
-    cantidad: int = 1  # cuántas salen a esa misma hora y minuto
+    cantidad: int = 1  # cuántas salen a esa misma hora y minuto (o ese mismo día, si no tienen hora exacta)
+    sin_hora: bool = False  # evento de todo el día: no hay hora exacta y `cuando` solo indica el día
 
 
 def fecha_larga(dt):
@@ -30,7 +35,9 @@ def hora(dt):
 
 
 def es_de_madrugada(tormenta):
-    """De 00:00 a 06:00, ambas incluidas (hora de España)."""
+    """De 00:00 a 06:00, ambas incluidas (hora de España). Las tormentas sin hora exacta no cuentan."""
+    if tormenta.sin_hora:
+        return False
     t = tormenta.cuando
     return t.hour < 6 or (t.hour == 6 and t.minute == 0)
 
@@ -53,7 +60,10 @@ def _item(tormenta, con_fecha):
     juntas = f" (vienen {tormenta.cantidad} juntas)" if tormenta.cantidad > 1 else ""
     if con_fecha:
         fecha = fecha_larga(tormenta.cuando)
-        return f"• {fecha[0].upper() + fecha[1:]} — {hora(tormenta.cuando)} ⛈️{juntas}"
+        cuando = "sin hora exacta" if tormenta.sin_hora else hora(tormenta.cuando)
+        return f"• {fecha[0].upper() + fecha[1:]} — {cuando} ⛈️{juntas}"
+    if tormenta.sin_hora:
+        return f"• Sin hora exacta ⛈️{juntas}"
     madrugada = " 🌙 de madrugada" if es_de_madrugada(tormenta) else ""
     return f"• {hora(tormenta.cuando)} ⛈️{madrugada}{juntas}"
 
@@ -97,13 +107,23 @@ def resumen_diario(dia, tormentas):
     cuantas = "se espera 1 tormenta de las gordas" if n == 1 else f"se esperan {n} tormentas de las gordas"
     lista = "\n".join(_item(t, con_fecha=False) for t in tormentas)
     nocturno = f"{AVISO_NOCTURNO_RESUMEN}\n\n" if any(es_de_madrugada(t) for t in tormentas) else ""
+    hay_sin_hora = any(t.sin_hora for t in tormentas)
+    hay_con_hora = any(not t.sin_hora for t in tormentas)
+    sin_hora = f"{AVISO_SIN_HORA}\n\n" if hay_sin_hora else ""
+    if not hay_sin_hora:
+        promesa = "¡Te iremos avisando antes de cada una!"
+    elif hay_con_hora:
+        promesa = "¡Te iremos avisando antes de las que tienen hora!"
+    else:
+        promesa = ""
+    cierre = f"No te confíes: ten los limones recogidos y las herramientas a mano. {promesa}".strip()
     return (
         "@everyone 🌥️ Parte meteorológico de la huerta\n\n"
         f"📅 Resumen del día ({fecha}): hoy el cielo viene cargado, {cuantas}:\n\n"
         f"{lista}\n\n"
         f"{nocturno}"
-        "No te confíes: ten los limones recogidos y las herramientas a mano. "
-        "¡Te iremos avisando antes de cada una!"
+        f"{sin_hora}"
+        f"{cierre}"
     )
 
 

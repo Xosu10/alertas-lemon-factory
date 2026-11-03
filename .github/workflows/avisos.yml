@@ -47,7 +47,7 @@ jobs:
           FIRST_ALERT_MINUTES: ${{ vars.FIRST_ALERT_MINUTES }}
           SECOND_ALERT_MINUTES: ${{ vars.SECOND_ALERT_MINUTES }}
           SUMMARY_HOUR: ${{ vars.SUMMARY_HOUR }}
-          IGNORED_TITLES: ${{ vars.IGNORED_TITLES }}
+          ALL_DAY_TITLES: ${{ vars.ALL_DAY_TITLES }}
         run: python main.py
 
       - name: Guardar el registro de avisos ya enviados

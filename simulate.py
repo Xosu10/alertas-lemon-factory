@@ -124,14 +124,6 @@ def main():
         return [
             evento(madrid(10, 14, 20, 30), impacto="Medium"),
             evento(madrid(10, 14, 20, 30), pais="EUR"),
-            {
-                "title": "Evento de todo el día",
-                "country": "USD",
-                "date": "2026-10-14T00:00:00-04:00",
-                "impact": "High",
-                "forecast": "",
-                "previous": "",
-            },
         ]
 
     cambio_horario = [
@@ -164,6 +156,12 @@ def main():
         evento(madrid(10, 16, 14, 30)),
     ]
     semana_vieja = ruido(range(5, 10)) + [evento(madrid(10, 7, 20, 0))]
+    # Semana real del 2 al 6 de noviembre: elecciones (todo el día, con una hora inventada: 10:16 de Nueva York) y 3 eventos el viernes
+    semana_nov = [
+        evento(madrid(11, 2, 3, 0), impacto="Low", pais="EUR"),
+        evento(madrid(11, 3, 16, 16), titulo="Congressional Elections"),
+        *[evento(madrid(11, 6, 14, 30))] * 3,
+    ]
     tranquila = ruido(range(12, 17))
     tranquila_19 = ruido(range(19, 24))
 
@@ -213,7 +211,7 @@ def main():
             [("19:02", "primera"), ("20:02", "primera"), ("20:32", "segunda")],
         ),
         simular(
-            "E) Cosas que no cuentan: impacto medio, otro país y un evento de todo el día",
+            "E) Cosas que no cuentan: impacto medio y otro país",
             no_cuentan,
             madrid(10, 14, 5, 2, 40),
             madrid(10, 14, 20, 40, 40),
@@ -323,7 +321,7 @@ def main():
             resumenes=True,
         ),
         simular(
-            "K) Eventos de todo el día con hora inventada (como las elecciones de hoy, a las 16:16): se ignoran",
+            "K) Eventos de todo el día con hora inventada (como las elecciones de hoy, a las 16:16): no tienen alertas",
             lambda ahora: [
                 evento(madrid(11, 3, 16, 15), titulo="Congressional Elections"),
                 evento(madrid(11, 3, 16, 16)),
@@ -333,6 +331,45 @@ def main():
             madrid(11, 3, 16, 40, 40),
             [("15:32", "primera"), ("16:02", "segunda")],
             comprobar_extra=lambda enviados: "16:30 (hora España)" in enviados[0][1],
+        ),
+        simular(
+            "L) Una tormenta real a las 00:00 de Nueva York (06:00 en España) SÍ se avisa, con el aviso de madrugada",
+            lambda ahora: [evento(madrid(11, 3, 6, 0))],
+            madrid(11, 3, 4, 32, 40),
+            madrid(11, 3, 6, 10, 40),
+            [("05:02", "primera"), ("05:32", "segunda")],
+            comprobar_extra=lambda enviados: all("🌙 Y es de madrugada" in texto for _, texto in enviados),
+        ),
+        simular(
+            "M) Resumen diario de hoy (elecciones sin hora exacta): sale con el aviso de 'no hay hora exacta'",
+            lambda ahora: semana_nov,
+            madrid(11, 2, 23, 32, 40),
+            madrid(11, 3, 0, 30, 40),
+            [("03/11 00:02", "diario")],
+            mostrar_textos=True,
+            comprobar_extra=lambda enviados: (
+                "• Sin hora exacta ⛈️" in enviados[0][1]
+                and "no hay hora exacta de la tormenta" in enviados[0][1]
+                and "16:16" not in enviados[0][1]
+                and "avisando antes" not in enviados[0][1]
+            ),
+            resumenes=True,
+            con_dia=True,
+            previos=[("dia|2026-11-02", "resumen_diario"), ("semana|2026-W45", "resumen_semanal")],
+        ),
+        simular(
+            "N) Resumen semanal del lunes 2 de noviembre: la tormenta sin hora del martes y la del viernes con hora",
+            lambda ahora: semana_nov,
+            madrid(11, 1, 23, 32, 40),
+            madrid(11, 2, 0, 30, 40),
+            [("02/11 00:02", "semanal"), ("02/11 00:02", "diario")],
+            mostrar_textos=True,
+            comprobar_extra=lambda enviados: (
+                "• Martes 3 de noviembre — sin hora exacta ⛈️" in enviados[0][1]
+                and "• Viernes 6 de noviembre — 14:30 ⛈️ (vienen 3 juntas)" in enviados[0][1]
+            ),
+            resumenes=True,
+            con_dia=True,
         ),
     ]
     resultados.append(ok_limites)

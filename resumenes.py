@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 from config import SUMMARY_HOUR
 from envio import enviar_una_vez
 from messages import resumen_diario, resumen_semanal
-from tormentas import agrupar
+from tormentas import agrupar, agrupar_sin_hora, ordenar
 
 MADRID = ZoneInfo("Europe/Madrid")
 LUNES = 0
@@ -23,7 +23,15 @@ def _trae_la_semana(todos, lunes):
     return any(lunes <= _fecha_madrid(e) <= domingo for e in todos)
 
 
-def enviar_resumen_diario(todos, tormentas_filtradas, ahora, enviar):
+def tormentas_entre(con_hora, sin_hora, desde, hasta):
+    """Tormentas entre dos fechas (hora de España, ambas incluidas), ordenadas, con y sin hora exacta."""
+    en_rango = lambda e: desde <= _fecha_madrid(e) <= hasta
+    return ordenar(
+        agrupar([e for e in con_hora if en_rango(e)]) + agrupar_sin_hora([e for e in sin_hora if en_rango(e)])
+    )
+
+
+def enviar_resumen_diario(todos, con_hora, sin_hora, ahora, enviar):
     """De lunes a viernes, a partir de la hora del resumen, una vez al día, con las tormentas del día en curso (hora de España)."""
     ahora_madrid = ahora.astimezone(MADRID)
     if ahora_madrid.weekday() >= SABADO or ahora_madrid.hour < SUMMARY_HOUR:
@@ -34,12 +42,11 @@ def enviar_resumen_diario(todos, tormentas_filtradas, ahora, enviar):
         logger.info("El calendario aún no trae la semana nueva; el resumen diario espera")
         return
 
-    de_hoy = [e for e in tormentas_filtradas if _fecha_madrid(e) == hoy]
-    texto = resumen_diario(ahora_madrid, agrupar(de_hoy))
+    texto = resumen_diario(ahora_madrid, tormentas_entre(con_hora, sin_hora, hoy, hoy))
     enviar_una_vez(f"dia|{hoy.isoformat()}", "resumen_diario", texto, enviar)
 
 
-def enviar_resumen_semanal(todos, tormentas_filtradas, ahora, enviar):
+def enviar_resumen_semanal(todos, con_hora, sin_hora, ahora, enviar):
     """Los lunes a partir de la hora del resumen, una vez por semana (lunes a domingo, hora de España)."""
     ahora_madrid = ahora.astimezone(MADRID)
     if ahora_madrid.weekday() != LUNES or ahora_madrid.hour < SUMMARY_HOUR:
@@ -50,8 +57,6 @@ def enviar_resumen_semanal(todos, tormentas_filtradas, ahora, enviar):
         logger.info("El calendario aún no trae la semana nueva; el resumen semanal espera")
         return
 
-    domingo = lunes + timedelta(days=6)
-    de_la_semana = [e for e in tormentas_filtradas if lunes <= _fecha_madrid(e) <= domingo]
     anio, semana, _ = ahora_madrid.isocalendar()
-    texto = resumen_semanal(agrupar(de_la_semana))
+    texto = resumen_semanal(tormentas_entre(con_hora, sin_hora, lunes, lunes + timedelta(days=6)))
     enviar_una_vez(f"semana|{anio}-W{semana:02d}", "resumen_semanal", texto, enviar)

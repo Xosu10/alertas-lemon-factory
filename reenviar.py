@@ -9,15 +9,11 @@ import requests
 
 from discord_notifier import send_discord_message
 from fetch import get_events
-from filter import filtrar_tormentas
+from filter import filtrar_tormentas, filtrar_tormentas_sin_hora
 from messages import resumen_diario, resumen_semanal
-from tormentas import agrupar
+from resumenes import tormentas_entre
 
 MADRID = ZoneInfo("Europe/Madrid")
-
-
-def _fecha_madrid(evento):
-    return datetime.fromisoformat(evento["date"]).astimezone(MADRID).date()
 
 
 def _descargar_calendario():
@@ -40,10 +36,12 @@ def main():
     hoy = ahora.date()
     lunes = hoy - timedelta(days=hoy.weekday())
     domingo = lunes + timedelta(days=6)
-    tormentas = filtrar_tormentas(_descargar_calendario())
+    calendario = _descargar_calendario()
+    con_hora = filtrar_tormentas(calendario)
+    sin_hora = filtrar_tormentas_sin_hora(calendario)
 
-    semanal = resumen_semanal(agrupar([e for e in tormentas if lunes <= _fecha_madrid(e) <= domingo]))
-    diario = resumen_diario(ahora, agrupar([e for e in tormentas if _fecha_madrid(e) == hoy]))
+    semanal = resumen_semanal(tormentas_entre(con_hora, sin_hora, lunes, domingo))
+    diario = resumen_diario(ahora, tormentas_entre(con_hora, sin_hora, hoy, hoy))
 
     for nombre, texto in (("RESUMEN SEMANAL", semanal), ("RESUMEN DIARIO", diario)):
         print("=" * 60)

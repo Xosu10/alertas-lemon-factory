@@ -15,6 +15,20 @@ def agrupar(eventos):
     return [Tormenta(cuando.astimezone(MADRID), n) for cuando, n in sorted(cuantos.items())]
 
 
+def agrupar_sin_hora(eventos):
+    """Une por día (hora de España) los eventos de todo el día, que no tienen hora exacta."""
+    cuantos = Counter(datetime.fromisoformat(e["date"]).astimezone(MADRID).date() for e in eventos)
+    return [
+        Tormenta(datetime(dia.year, dia.month, dia.day, tzinfo=MADRID), n, sin_hora=True)
+        for dia, n in sorted(cuantos.items())
+    ]
+
+
+def ordenar(tormentas):
+    """Por día y, dentro de cada día, primero las que tienen hora y al final las que no."""
+    return sorted(tormentas, key=lambda t: (t.cuando.date(), t.sin_hora, t.cuando))
+
+
 def tipo_de_alerta(minutos_restantes):
     """'primera' si quedan entre 30 y 60 min, 'segunda' si quedan 30 o menos, None si ya pasó o falta mucho."""
     if minutos_restantes <= 0:

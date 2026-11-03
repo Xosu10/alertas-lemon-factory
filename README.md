@@ -18,7 +18,8 @@ Reglas:
 - No se mandan avisos caducados: si la primera alerta ya no llega a tiempo, solo sale la segunda; si la tormenta ya pasó, no se avisa.
 - Si cambia la hora de una tormenta, se recalcula y no se avisa a la hora antigua.
 - Las tormentas de madrugada (de 00:00 a 06:00) añaden un aviso de no ir al huerto de noche, en el resumen diario y en sus dos alertas.
-- Los eventos sin hora concreta (de todo el día) se ignoran. El calendario no los marca como tales: les inventa una hora. Por eso se reconocen por tener las 00:00 exactas, un minuto que no es múltiplo de 5 (las publicaciones reales sí lo son) o un nombre como "elecciones". Se pueden añadir más palabras con la variable `IGNORED_TITLES`.
+- Los eventos de todo el día no tienen hora exacta: el calendario no los marca como tales y les inventa una hora. Se reconocen por tener un minuto que no es múltiplo de 5 (las publicaciones reales sí lo son) o un nombre como "elecciones". Para esas tormentas no hay alertas de 1 hora ni de 30 minutos, pero salen en los resúmenes como "sin hora exacta", con un aviso de que no hay hora y de que hay que estar atento. Se pueden añadir más palabras con la variable `ALL_DAY_TITLES`.
+- Una tormenta real a las 00:00 (de la hora que sea) se avisa con normalidad.
 - Las horas son de España peninsular (con cambio de hora de verano e invierno) y las fechas salen en español.
 - Los lunes, si el calendario aún no trae la semana nueva, los dos resúmenes esperan a que la traiga.
 
@@ -38,7 +39,7 @@ Todo es gratis: el repositorio es público (minutos de Actions ilimitados) y no 
 | `FIRST_ALERT_MINUTES` | Variable de GitHub (opcional) | 60 | Minutos para la primera alerta |
 | `SECOND_ALERT_MINUTES` | Variable de GitHub (opcional) | 30 | Minutos para la segunda alerta |
 | `SUMMARY_HOUR` | Variable de GitHub (opcional) | 0 | Hora (España) de los resúmenes (0 = medianoche) |
-| `IGNORED_TITLES` | Variable de GitHub (opcional) | vacío | Palabras separadas por comas; si salen en el nombre de un evento, se ignora (se suman a "election") |
+| `ALL_DAY_TITLES` | Variable de GitHub (opcional) | vacío | Palabras separadas por comas; si salen en el nombre de un evento, se trata como "sin hora exacta" (se suman a "election") |
 
 La URL del webhook nunca se escribe en el código ni se sube al repositorio. Se pega desde el portapapeles en
 Settings → Secrets and variables → Actions → New repository secret, con el nombre `DISCORD_WEBHOOK_URL`.
