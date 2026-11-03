@@ -18,3 +18,6 @@ SECOND_ALERT_MINUTES = _int_env("SECOND_ALERT_MINUTES", 30)
 
 # Hora (España) del resumen diario y, los lunes, del semanal (0 = medianoche)
 SUMMARY_HOUR = _int_env("SUMMARY_HOUR", 0)
+
+# Palabras (separadas por comas) que, si salen en el nombre de un evento, hacen que se ignore. Se suman a las de filter.py
+IGNORED_TITLES = tuple(p.strip().lower() for p in os.environ.get("IGNORED_TITLES", "").split(",") if p.strip())

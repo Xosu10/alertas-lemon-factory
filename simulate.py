@@ -22,9 +22,9 @@ def madrid(mes, dia, hora, minuto, segundo=0):
     return datetime(2026, mes, dia, hora, minuto, segundo, tzinfo=MADRID)
 
 
-def evento(cuando, impacto="High", pais="USD"):
+def evento(cuando, impacto="High", pais="USD", titulo="Evento de prueba"):
     return {
-        "title": "Evento de prueba",
+        "title": titulo,
         "country": pais,
         "date": cuando.astimezone(NUEVA_YORK).isoformat(),
         "impact": impacto,
@@ -321,6 +321,18 @@ def main():
                 and all("🌙 Y es de madrugada" in texto for _, texto in enviados[1:])
             ),
             resumenes=True,
+        ),
+        simular(
+            "K) Eventos de todo el día con hora inventada (como las elecciones de hoy, a las 16:16): se ignoran",
+            lambda ahora: [
+                evento(madrid(11, 3, 16, 15), titulo="Congressional Elections"),
+                evento(madrid(11, 3, 16, 16)),
+                evento(madrid(11, 3, 16, 30)),
+            ],
+            madrid(11, 3, 14, 32, 40),
+            madrid(11, 3, 16, 40, 40),
+            [("15:32", "primera"), ("16:02", "segunda")],
+            comprobar_extra=lambda enviados: "16:30 (hora España)" in enviados[0][1],
         ),
     ]
     resultados.append(ok_limites)
